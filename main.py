@@ -43,10 +43,15 @@ else:
     selected_file = os.path.join(data_folder, json_files[file_index])
 
     while True:
+        entries_per_file = input("Please enter how many JSON entries you want to chunk or type 'N/A' to extract a specific field: ").strip()
+        if entries_per_file.lower() == 'n/a':
+            field_to_extract = input("What field would you like to extract? ").strip()
+            break
         try:
-            entries_per_file = int(input("Please enter how many JSON entries you want to chunk: "))
+            entries_per_file = int(entries_per_file)
             if entries_per_file <= 0:
-                raise ValueError("Number of entries per file must be great than zero.")
+                raise ValueError("Number of entries per file must be greater than zero.")
+            field_to_extract = None
             break
         except ValueError as e:
             print(e)
@@ -65,12 +70,22 @@ def write_chunks(data, chunk_size, output_dir, file_pref):
         with open(file_name, 'w', encoding='utf-8') as f:
             json.dump(chunk, f, indent=2)
 
-def run(input_file, entries_per_file, output_directory):
+def write_field(data, field, output_dir, file_pref):
+    os.makedirs(output_dir, exist_ok=True)
+    extracted_data = [data.get(field, None) for data in data]
+    file_name = os.path.join(output_dir, f'{file_pref}_extracted_{field}.json')
+    with open(file_name, 'w', encoding='utf-8') as f:
+        json.dump(extracted_data, f, indent=2)
+
+def run(input_file, entries_per_file, output_directory, field_to_extract=None):
     file_pref = os.path.splitext(os.path.basename(input_file))[0]
     
     with open(input_file, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
-    write_chunks(data, entries_per_file, output_directory, file_pref)
+    if field_to_extract is not None:
+        write_field(data, field_to_extract, output_directory, file_pref)
+    else:
+        write_chunks(data, entries_per_file, output_directory, file_pref)
 
-run(selected_file, entries_per_file, output_directory)
+run(selected_file, entries_per_file, output_directory, field_to_extract)
